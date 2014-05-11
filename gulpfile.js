@@ -1,7 +1,8 @@
 var gulp = require('gulp');
-var concat = require('gulp-concat');
-var es6transpiler = require('gulp-es6-transpiler');
 var connect = require('gulp-connect');
+var source = require('vinyl-source-stream');
+var browserify = require('browserify');
+var es6ify = require('es6ify');
 
 var baseDir = './app/';
 var scriptDir = baseDir + 'scripts/';
@@ -16,11 +17,17 @@ gulp.task('server', function() {
   })
 });
 
+es6ify.traceurOverrides = { blockBinding: true };
+
 gulp.task('scripts', function () {
-  return gulp.src(scriptDir + '**/*.js')
-    .pipe(es6transpiler())
-    .pipe(concat('main.js'))
-    .pipe(gulp.dest(distDir));
+  return browserify()
+    .add(es6ify.runtime)
+    .transform(es6ify)
+    .require(require.resolve(scriptDir + 'app.js'), { entry: true })
+    .bundle({ debug: true })
+    .pipe(source('app.js'))
+    .pipe(gulp.dest(distDir))
+    .pipe(connect.reload());
 });
 
 
@@ -36,8 +43,8 @@ gulp.task('styles', function() {
 
 gulp.task('watch', function () {
   gulp.watch(scriptDir + '**/*.js', ['scripts']);
+  gulp.watch(styleDir + '**/*.css', ['styles']);
   gulp.watch(baseDir + 'index.html', ['html']);
-  gulp.watch(styleDir, ['styles']);
 });
 
 gulp.task('default', ['scripts', 'server', 'watch']);
