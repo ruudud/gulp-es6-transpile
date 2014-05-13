@@ -1,4 +1,5 @@
 var gulp = require('gulp');
+var gutil = require('gulp-util');
 var connect = require('gulp-connect');
 var source = require('vinyl-source-stream');
 var browserify = require('browserify');
@@ -20,11 +21,13 @@ gulp.task('server', function() {
 es6ify.traceurOverrides = { blockBinding: true };
 
 gulp.task('scripts', function () {
-  return browserify()
-    .add(es6ify.runtime)
+  return browserify([
+      es6ify.runtime,
+      scriptDir + 'app.js'
+    ])
     .transform(es6ify)
-    .require(require.resolve(scriptDir + 'app.js'), { entry: true })
     .bundle({ debug: true })
+    .on('error', gutil.log)
     .pipe(source('app.js'))
     .pipe(gulp.dest(distDir))
     .pipe(connect.reload());
